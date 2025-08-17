@@ -19,32 +19,35 @@ def load_data():
 
 
 
-# def get_columns() -> list:
-#     """Return a list of column names from the first Excel sheet."""
-#     return df.columns.tolist()
+def get_columns() -> list:
+    """Return a list of column names from the first Excel sheet."""
+    sheets = load_data()
+    return {name: df.columns.tolist() for name, df in sheets.items()}
 
 
-# def group_by_po_number() -> dict:
-#     """
-#     Groups the data by 'PoNumber' (flexible column naming like 'PO No.') and returns it in JSON format.
-#     """
-#     possible_names = ["PoNumber", "PO Number", "PO No.", "PO_NO", "PO no", "po_number"]
-#     result = {}
-#     for sheet_name, sheet_df in df.items():
-#         found_po_column = next(
-#             (col for col in sheet_df.columns if col.strip() in possible_names), None
-#         )
 
-#         if not found_po_column:
-#             result[sheet_name] = "❌ No PO column found"
-#             continue
+def group_by_po_number() -> dict:
+    """
+    Groups the data by 'PoNumber' (flexible column naming like 'PO No.') and returns it in JSON format.
+    """
+    sheets = load_data()
+    possible_names = ["PoNumber", "PO Number", "PO No.", "PO_NO", "PO no", "po_number"]
+    result = {}
+    for sheet_name, sheet_df in sheets.items():
+        found_po_column = next(
+            (col for col in sheet_df.columns if col.strip() in possible_names), None
+        )
 
-#         grouped = sheet_df.groupby(found_po_column).apply(
-#             lambda x: x.to_dict(orient="records")
-#         )
-#         result[sheet_name] = grouped.to_dict()
+        if not found_po_column:
+            result[sheet_name] = "❌ No PO column found"
+            continue
 
-#     return result
+        grouped = sheet_df.groupby(found_po_column).apply(
+            lambda x: x.to_dict(orient="records")
+        )
+        result[sheet_name] = grouped.to_dict()
+
+    return result
 
 
 # def group_by_sku_code() -> dict:
@@ -93,36 +96,36 @@ def load_data():
 #     return result
 
 
-# def total_sales_by_sku() -> str:
-#     """
-#     Groups data by 'SkuCode' and returns total sales per SKU as JSON string.
-#     Handles multiple sheets with different column names (SkuCode/SKU, PoLineValueWithTax/Total Amount).
-#     """
-#     all_results = {}
-    
-#     for sheet_name, sheet_df in df.items():
-#         # Determine column names for this sheet
-#         sku_col = "SkuCode" if "SkuCode" in sheet_df.columns else "SKU"
-#         amount_col = "PoLineValueWithTax" if "PoLineValueWithTax" in sheet_df.columns else "Total Amount"
+def total_sales_by_sku() -> str:
+    """
+    Groups data by 'SkuCode' and returns total sales per SKU as JSON string.
+    Handles multiple sheets with different column names (SkuCode/SKU, PoLineValueWithTax/Total Amount).
+    """
+    all_results = {}
+    sheets = load_data()
+    for sheet_name, sheet_df in sheets.items():
+        # Determine column names for this sheet
+        sku_col = "SkuCode" if "SkuCode" in sheet_df.columns else "SKU"
+        amount_col = "PoLineValueWithTax" if "PoLineValueWithTax" in sheet_df.columns else "Total Amount"
         
-#         # Group by SKU for this sheet
-#         grouped = sheet_df.groupby(sku_col)[amount_col].sum().reset_index()
+        # Group by SKU for this sheet
+        grouped = sheet_df.groupby(sku_col)[amount_col].sum().reset_index()
         
-#         # Add sheet results to overall results
-#         for _, row in grouped.iterrows():
-#             sku_code = row[sku_col]
-#             value = row[amount_col]
+        # Add sheet results to overall results
+        for _, row in grouped.iterrows():
+            sku_code = row[sku_col]
+            value = row[amount_col]
             
-#             if sku_code in all_results:
-#                 all_results[sku_code] += value
-#             else:
-#                 all_results[sku_code] = value
+            if sku_code in all_results:
+                all_results[sku_code] += value
+            else:
+                all_results[sku_code] = value
     
-#     # Convert to list of dictionaries format
-#     result_list = [{"SKU": sku, "AMOUNT": total} 
-#                    for sku, total in all_results.items()]
+    # Convert to list of dictionaries format
+    result_list = [{"SKU": sku, "AMOUNT": total} 
+                   for sku, total in all_results.items()]
     
-#     return json.dumps(result_list)
+    return json.dumps(result_list)
 
 
 # def plot_sales_by_sku(data: str) -> str:
